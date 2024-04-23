@@ -175,7 +175,7 @@ class Object3D:
         vertexes = self.vertexes @ self.render.camera._camera()
         vertexes = vertexes @ self.render.Clip_Projection.projection_matrix
         vertexes /= vertexes[:, -1].reshape(-1, 1)
-        vertexes[(vertexes > 1) | (vertexes < -1)] = 0
+        vertexes[(vertexes > 2) | (vertexes < -2)] = 0
         vertexes = vertexes @ self.render.Clip_Projection.to_screen_matrix
         vertexes = vertexes[:, :2]
 
@@ -244,6 +244,87 @@ class Camera:
         self.v_fov = self.h_fov * (HEIGHT / WIDTH)
         self.near_plane = 0.1
         self.far_plane = 100
+        self.moving_speed = 0.02
+        self.rotation_speed = 0.5
+
+    def control(self) -> None:
+        """
+        Method to control camera movement and rotation based on user input.
+        """
+        key = pygame.key.get_pressed()
+
+        # Handling user input for camera controls
+        if key[pygame.K_a]:
+            # Move left (along the camera's right vector)
+            self.position -= self.right * self.moving_speed
+
+        elif key[pygame.K_d]:
+            # Move right (along the camera's right vector)
+            self.position += self.right * self.moving_speed
+
+        elif key[pygame.K_w]:
+            # Move forward (along the camera's forward vector)
+            self.position += self.forward * self.moving_speed
+
+        elif key[pygame.K_s]:
+            # Move backward (along the camera's forward vector)
+            self.position -= self.forward * self.moving_speed
+
+        elif key[pygame.K_q]:
+            # Move up (along the camera's up vector)
+            self.position += self.up * self.moving_speed
+
+        elif key[pygame.K_e]:
+            # Move down (along the camera's up vector)
+            self.position -= self.up * self.moving_speed
+
+        elif key[pygame.K_LEFT]:
+            # Rotate the camera (along the y axis)
+            self._camera_yaw(-self.rotation_speed)
+
+        elif key[pygame.K_RIGHT]:
+            # Rotate the camera (along the y axis)
+            self._camera_yaw(self.rotation_speed)
+
+        elif key[pygame.K_UP]:
+            # Rotate the camera (along the x axis)
+            self._camera_pitch(-self.rotation_speed)
+
+        elif key[pygame.K_DOWN]:
+            # Rotate the camera (along the x axis)
+            self._camera_pitch(self.rotation_speed)
+
+        elif key[pygame.K_h]:
+            # Print controls guide when 'h' key is pressed
+            print("""
+            Camera moving controls:
+
+                a - to go LEFT
+                d - to go RIGHT
+                w - to go FORWARD
+                s - to go BACKWARD
+                q - to go UP
+                e - to go DOWN
+
+            Camera rotation controls:
+
+                ← - to LEFT YAW
+                → - to RIGHT YAW
+                ↑ - to PITCH
+                ↓ - to PITCH
+            """)
+
+    def _camera_yaw(self, angle):
+        rotate = rotate_y(angle=angle)
+        self.forward = self.forward @ rotate
+        self.right = self.right @ rotate
+        self.up = self.up @ rotate
+
+    def _camera_pitch(self, angle):
+        rotate = rotate_x(angle=angle)
+        self.forward = self.forward @ rotate
+        self.right = self.right @ rotate
+        self.up = self.up @ rotate
 
     def _translate(self):
         """
@@ -363,6 +444,11 @@ while True:
 
     # Draw the cube
     cube.draw(window=window)
+    # Move the cube
+    cube.rotate_y(math.degrees(pygame.time.get_ticks() % 0.005))
+
+    # Activate the control of the camera
+    render.camera.control()
 
     # Handle events
     for event in pygame.event.get():
