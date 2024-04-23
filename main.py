@@ -10,6 +10,27 @@ BACKGROUND_COLOR = (0, 0, 0)
 LINE_COLOR = (255, 0, 255)
 VERTEX_COLOR = (255, 255, 255)
 
+# 3D - Cube
+cube_vertexes = np.array([
+    (0, 0, 0, 1),
+    (0, 1, 0, 1),
+    (1, 1, 0, 1),
+    (1, 0, 0, 1),
+    (0, 0, 1, 1),
+    (0, 1, 1, 1),
+    (1, 1, 1, 1),
+    (1, 0, 1, 1)
+])
+
+cube_faces = np.array([
+    (0, 1, 2, 3),
+    (4, 5, 6, 7),
+    (0, 4, 5, 1),
+    (2, 3, 7, 6),
+    (1, 2, 6, 5),
+    (0, 3, 7, 4)
+])
+
 # Matrix operation Functions
 
 def translate(position):
@@ -46,8 +67,8 @@ def rotate_x(angle):
     sin_a = math.sin(rad)
     rotation_matrix = np.array([
         [1, 0, 0, 0],
-        [0, cos_a, -sin_a, 0],
-        [0, sin_a, cos_a, 0],
+        [0, cos_a, sin_a, 0],
+        [0, -sin_a, cos_a, 0],
         [0, 0, 0, 1]
     ])
     return rotation_matrix
@@ -66,9 +87,9 @@ def rotate_y(angle):
     cos_a = math.cos(rad)
     sin_a = math.sin(rad)
     rotation_matrix = np.array([
-        [cos_a, 0, sin_a, 0],
+        [cos_a, 0, -sin_a, 0],
         [0, 1, 0, 0],
-        [-sin_a, 0, cos_a, 0],
+        [sin_a, 0, cos_a, 0],
         [0, 0, 0, 1]
     ])
     return rotation_matrix
@@ -87,8 +108,8 @@ def rotate_z(angle):
     cos_a = math.cos(rad)
     sin_a = math.sin(rad)
     rotation_matrix = np.array([
-        [cos_a, -sin_a, 0, 0],
-        [sin_a, cos_a, 0, 0],
+        [cos_a, sin_a, 0, 0],
+        [-sin_a, cos_a, 0, 0],
         [0, 0, 1, 0],
         [0, 0, 0, 1]
     ])
@@ -113,26 +134,6 @@ def scale(scaling_factors):
     ])
     return scaling_matrix
 
-# 3D - Cube
-cube_vertexes = np.array([
-    (0, 0, 0, 1),
-    (0, 1, 0, 1),
-    (1, 1, 0, 1),
-    (1, 0, 0, 1),
-    (0, 0, 1, 1),
-    (0, 1, 1, 1),
-    (1, 1, 1, 1),
-    (1, 0, 1, 1)
-])
-
-cube_faces = np.array([
-    (0, 1, 2, 3),
-    (4, 5, 6, 7),
-    (0, 4, 5, 1),
-    (2, 3, 7, 6),
-    (1, 2, 6, 5),
-    (0, 3, 7, 4)
-])
 
 # Class to create 3D objects
 
@@ -150,18 +151,18 @@ class Object3D:
         self.vertexes = vertexes
         self.faces = faces
 
-    def draw(self):
+    def draw(self, window):
         """
         Draw the 3D object on the screen.
         """
         vertexes = self._screen_projection()
         for face in self.faces:
             polygon = vertexes[face]
-            if not np.any(polygon == [HALF_WIDTH, HALF_HEIGHT]):
+            if not np.any((polygon == HALF_WIDTH) | (polygon == HALF_HEIGHT)):
                 pygame.draw.polygon(window, pygame.Color(LINE_COLOR), polygon, 3)
 
         for vertex in vertexes:
-            if not np.any(vertex == [HALF_WIDTH, HALF_HEIGHT]):
+            if not np.any((vertex == HALF_WIDTH) | (vertex == HALF_HEIGHT)):
                 pygame.draw.circle(window, pygame.Color(VERTEX_COLOR), vertex, 6)
 
     def _screen_projection(self):
@@ -175,12 +176,12 @@ class Object3D:
         vertexes = vertexes @ self.render.Clip_Projection.projection_matrix
         vertexes /= vertexes[:, -1].reshape(-1, 1)
         vertexes[(vertexes > 1) | (vertexes < -1)] = 0
-        vertexes = vertexes @ self.render.projection.to_screen_matrix
+        vertexes = vertexes @ self.render.Clip_Projection.to_screen_matrix
         vertexes = vertexes[:, :2]
 
         return vertexes
 
-    def _translate(self, position):
+    def translate(self, position):
         """
         Translate the object by the given translation vector.
 
@@ -189,7 +190,7 @@ class Object3D:
         """
         self.vertexes = self.vertexes @ translate(position=position)
 
-    def _rotate_x(self, angle):
+    def rotate_x(self, angle):
         """
         Rotate the object about the x-axis by the given angle.
 
@@ -198,7 +199,7 @@ class Object3D:
         """
         self.vertexes = self.vertexes @ rotate_x(angle=angle)
 
-    def _rotate_y(self, angle):
+    def rotate_y(self, angle):
         """
         Rotate the object about the y-axis by the given angle.
 
@@ -207,7 +208,7 @@ class Object3D:
         """
         self.vertexes = self.vertexes @ rotate_y(angle=angle)
 
-    def _rotate_z(self, angle):
+    def rotate_z(self, angle):
         """
         Rotate the object about the z-axis by the given angle.
 
@@ -216,7 +217,7 @@ class Object3D:
         """
         self.vertexes = self.vertexes @ rotate_z(angle=angle)
 
-    def _scale(self, scaling_factors):
+    def scale(self, scaling_factors):
         """
         Scale the object by the given scaling factors.
 
@@ -227,7 +228,7 @@ class Object3D:
 
 # Class to create a camera
 class Camera:
-    def __init__(self, render, position):
+    def __init__(self, position):
         """
         Initialize a camera with position and orientation.
 
@@ -240,7 +241,7 @@ class Camera:
         self.up = np.array([0, 1, 0, 1])
         self.right = np.array([1, 0, 0, 1])
         self.h_fov = math.pi / 3
-        self.v_fov = self.h_fov * (render.HEIGHT / render.WIDTH)
+        self.v_fov = self.h_fov * (HEIGHT / WIDTH)
         self.near_plane = 0.1
         self.far_plane = 100
 
@@ -305,8 +306,8 @@ class Clip_Projection:
         self.projection_matrix = np.array([
             [m00, 0, 0, 0],
             [0, m11, 0, 0],
-            [0, 0, m22, m32],
-            [0, 0, 1, 0]
+            [0, 0, m22, 1],
+            [0, 0, m32, 0]
         ])
         HW, HH = HALF_WIDTH, HALF_HEIGHT
         self.to_screen_matrix = np.array([
@@ -315,6 +316,36 @@ class Clip_Projection:
             [0, 0, 1, 0],
             [HW, HH, 0, 1]
         ])
+
+# Class to render an object
+class Render:
+    def __init__(self, camera_position):
+        """
+        Initialize the Render object.
+        """
+        self.camera = Camera(position=camera_position)
+        self.Clip_Projection = Clip_Projection(self)
+
+    def create_object(self, vertexes, faces):
+        """
+        Create a 3D object.
+
+        Args:
+            vertexes (numpy.ndarray): Array of vertexes in homogeneous coordinates.
+            faces (numpy.ndarray): Array of faces, each represented by the indices of vertexes.
+
+        Returns:
+            Object3D: A 3D object.
+        """
+        return Object3D(self, vertexes, faces)
+
+# Create a Render object
+render = Render(camera_position=[0.5, 1, -4])
+
+# Create a 3D object (a cube)
+cube = render.create_object(cube_vertexes, cube_faces)
+cube.translate([0.2, 0.4, 0.2])
+cube.rotate_y(30)
 
 # Initialize Pygame
 pygame.init()
@@ -329,6 +360,9 @@ clock = pygame.time.Clock()
 while True:
     # Fill the window with the background color
     window.fill(pygame.Color(BACKGROUND_COLOR))
+
+    # Draw the cube
+    cube.draw(window=window)
 
     # Handle events
     for event in pygame.event.get():
