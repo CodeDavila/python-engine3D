@@ -1,6 +1,7 @@
 import pygame
 import math
 import numpy as np
+pygame.init()
 
 # Constants for window resolution and colors
 RESOLUTION = WIDTH, HEIGHT = 800, 600
@@ -9,6 +10,7 @@ FPS = 60
 BACKGROUND_COLOR = (0, 0, 0)
 LINE_COLOR = (255, 0, 255)
 VERTEX_COLOR = (255, 255, 255)
+FONT_COLOR = (255, 255, 0)
 
 # 3D - Cube
 cube_vertexes = np.array([
@@ -138,7 +140,7 @@ def scale(scaling_factors):
 # Class to create 3D objects
 
 class Object3D:
-    def __init__(self, render, vertexes, faces):
+    def __init__(self, render, vertexes, faces, draw_vertexes = False):
         """
         Initialize a 3D object with vertexes and faces.
 
@@ -151,19 +153,30 @@ class Object3D:
         self.vertexes = vertexes
         self.faces = faces
 
+        self.font = pygame.font.SysFont('arial', 30, bold=True)
+        self.color_faces = [(pygame.Color(LINE_COLOR), face) for face in self.faces]
+        self.draw_vertexes = draw_vertexes
+        self.label = ''
+
     def draw(self, window):
         """
         Draw the 3D object on the screen.
         """
         vertexes = self._screen_projection()
-        for face in self.faces:
+
+        for index, color_face in enumerate(self.color_faces):
+            color, face = color_face
             polygon = vertexes[face]
             if not np.any((polygon == HALF_WIDTH) | (polygon == HALF_HEIGHT)):
-                pygame.draw.polygon(window, pygame.Color(LINE_COLOR), polygon, 3)
+                pygame.draw.polygon(window, color, polygon, 3)
+                if self.label:
+                    text = self.font.render(self.label[index], True, pygame.Color(FONT_COLOR))
+                    window.blit(text, polygon[-1])
 
-        for vertex in vertexes:
-            if not np.any((vertex == HALF_WIDTH) | (vertex == HALF_HEIGHT)):
-                pygame.draw.circle(window, pygame.Color(VERTEX_COLOR), vertex, 6)
+        if self.draw_vertexes:
+            for vertex in vertexes:
+                if not np.any((vertex == HALF_WIDTH) | (vertex == HALF_HEIGHT)):
+                    pygame.draw.circle(window, pygame.Color(VERTEX_COLOR), vertex, 6)
 
     def _screen_projection(self):
         """
@@ -225,6 +238,25 @@ class Object3D:
             scaling_factors (tuple): Scaling factors (sx, sy, sz).
         """
         self.vertexes = self.vertexes @ scale(scaling_factors=scaling_factors)
+
+class Axes(Object3D):
+    def __init__(self, render, vertexes = np.array([
+            (0, 0, 0, 1),
+            (1, 0, 0, 1),
+            (0, 1, 0, 1),
+            (0, 0, 1, 1)
+            ]), faces = np.array([
+            (0, 1),
+            (0, 2),
+            (0, 3)
+            ]), draw_vertexes=False):
+        super().__init__(render, vertexes, faces, draw_vertexes)
+        self.vertexes = vertexes
+        self.faces = faces
+        self.colors = [pygame.Color('red'), pygame.Color('green'), pygame.Color('blue')]
+        self.color_faces = [(color, face) for color, face in zip(self.colors, self.faces)]
+        self.draw_vertexes = False
+        self.label = 'XYZ'
 
 # Class to create a camera
 class Camera:
@@ -407,7 +439,7 @@ class Render:
         self.camera = Camera(position=camera_position)
         self.Clip_Projection = Clip_Projection(self)
 
-    def create_object(self, vertexes, faces):
+    def create_object(self, vertexes, faces, draw_vertexes = False):
         """
         Create a 3D object.
 
@@ -418,18 +450,28 @@ class Render:
         Returns:
             Object3D: A 3D object.
         """
-        return Object3D(self, vertexes, faces)
+        return Object3D(self, vertexes, faces, draw_vertexes)
+    
+    def create_axes(self):
+        return Axes(self)
 
 # Create a Render object
 render = Render(camera_position=[0.5, 1, -4])
 
 # Create a 3D object (a cube)
-cube = render.create_object(cube_vertexes, cube_faces)
+cube = render.create_object(cube_vertexes, cube_faces, draw_vertexes=True)
 cube.translate([0.2, 0.4, 0.2])
-cube.rotate_y(30)
+
+# Create cube axes
+axes = render.create_axes()
+axes.translate([0.7, 0.9, 0.7])
+
+# Create world axes
+world_axes = render.create_axes()
+world_axes.scale([2.5, 2.5, 2.5])
+world_axes.translate([0.0001, 0.0001, 0.0001])
 
 # Initialize Pygame
-pygame.init()
 
 # Create the game window
 window = pygame.display.set_mode(RESOLUTION)
@@ -442,10 +484,18 @@ while True:
     # Fill the window with the background color
     window.fill(pygame.Color(BACKGROUND_COLOR))
 
+    # Draw the world_axes
+    world_axes.draw(window=window)
+
     # Draw the cube
     cube.draw(window=window)
     # Move the cube
     cube.rotate_y(math.degrees(pygame.time.get_ticks() % 0.005))
+
+    # Draw the cube axes
+    axes.draw(window=window)
+    # Move the axes along the cube
+    axes.rotate_y(math.degrees(pygame.time.get_ticks() % 0.005))
 
     # Activate the control of the camera
     render.camera.control()
