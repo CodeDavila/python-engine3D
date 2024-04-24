@@ -546,7 +546,7 @@ while True:
             exit()
 
     # Set the window title to display the current FPS
-    pygame.display.set_caption(str(clock.get_fps()))
+    pygame.display.set_caption(str(math.ceil(clock.get_fps())))
 
     # Update the display
     pygame.display.flip()
