@@ -58,7 +58,7 @@ def readOBJ(file):
     return vertexes_r, faces_r
 
 # Duck model from file 
-duck_vertexes, duck_faces = readOBJ('duck.obj')
+# duck_vertexes, duck_faces = readOBJ('duck.obj')
 # Plane mpdel from file 
 plane_vertexes, plane_faces = readOBJ('plane_japan_wwII.obj')
 
