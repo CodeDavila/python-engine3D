@@ -4,7 +4,7 @@ import numpy as np
 pygame.init()
 
 # Constants for window resolution and colors
-RESOLUTION = WIDTH, HEIGHT = 800, 600
+RESOLUTION = WIDTH, HEIGHT = 1200, 700
 HALF_WIDTH, HALF_HEIGHT = WIDTH // 2, HEIGHT // 2
 FPS = 60
 BACKGROUND_COLOR = (0, 0, 0)
@@ -32,6 +32,25 @@ cube_faces = np.array([
     (1, 2, 6, 5),
     (0, 3, 7, 4)
 ])
+
+# Read a obj File Functions
+def readOBJ(file):
+    vertex, faces = [], []
+    with open(file) as file_handle:
+        for line in file_handle:
+            if line.startswith('v '):
+                vertex.append([float(i) for i in line.split()[1:]] + [1])
+            elif line.startswith('f'):
+                faces_ = line.split()[1:]
+                faces.append([int(face_.split('/')[0]) - 1 for face_ in faces_])
+
+    vertexes_r = np.array([np.array(v) for v in vertex])
+    faces_r = np.array([np.array(f) for f in faces])
+
+    return vertexes_r, faces_r
+
+# Duck model from file 
+duck_vertexes, duck_faces = readOBJ('duck.obj')
 
 # Matrix operation Functions
 
@@ -168,7 +187,7 @@ class Object3D:
             color, face = color_face
             polygon = vertexes[face]
             if not np.any((polygon == HALF_WIDTH) | (polygon == HALF_HEIGHT)):
-                pygame.draw.polygon(window, color, polygon, 3)
+                pygame.draw.polygon(window, color, polygon, 1)
                 if self.label:
                     text = self.font.render(self.label[index], True, pygame.Color(FONT_COLOR))
                     window.blit(text, polygon[-1])
@@ -176,7 +195,7 @@ class Object3D:
         if self.draw_vertexes:
             for vertex in vertexes:
                 if not np.any((vertex == HALF_WIDTH) | (vertex == HALF_HEIGHT)):
-                    pygame.draw.circle(window, pygame.Color(VERTEX_COLOR), vertex, 6)
+                    pygame.draw.circle(window, pygame.Color(VERTEX_COLOR), vertex, 2)
 
     def _screen_projection(self):
         """
@@ -456,16 +475,22 @@ class Render:
         return Axes(self)
 
 # Create a Render object
-render = Render(camera_position=[0.5, 1, -4])
+render = Render(camera_position=[0.5, 1.2, -6])
 
 # Create a 3D object (a cube)
-cube = render.create_object(cube_vertexes, cube_faces, draw_vertexes=True)
-cube.translate([0.2, 0.4, 0.2])
+# cube = render.create_object(cube_vertexes, cube_faces, draw_vertexes=True)
+# cube.translate([0.2, 0.4, 0.2])
 
 # Create cube axes
-axes = render.create_axes()
-axes.translate([0.7, 0.9, 0.7])
+# axes = render.create_axes()
+# axes.translate([0.7, 0.9, 0.7])
 
+# Create a 3D object (a duck)
+duck = render.create_object(duck_vertexes, duck_faces, draw_vertexes=False)
+duck.scale([0.04, 0.04, 0.04])
+duck.rotate_x(-90)
+duck.rotate_y(-150)
+duck.translate([1, 0.0001, 1])
 # Create world axes
 world_axes = render.create_axes()
 world_axes.scale([2.5, 2.5, 2.5])
@@ -488,14 +513,19 @@ while True:
     world_axes.draw(window=window)
 
     # Draw the cube
-    cube.draw(window=window)
+    # cube.draw(window=window)
     # Move the cube
-    cube.rotate_y(math.degrees(pygame.time.get_ticks() % 0.005))
+    # cube.rotate_y(math.degrees(pygame.time.get_ticks() % 0.005))
 
     # Draw the cube axes
-    axes.draw(window=window)
+    # axes.draw(window=window)
     # Move the axes along the cube
-    axes.rotate_y(math.degrees(pygame.time.get_ticks() % 0.005))
+    # axes.rotate_y(math.degrees(pygame.time.get_ticks() % 0.005))
+
+    # Draw the duck
+    duck.draw(window=window)
+    # Move the duck
+    duck.rotate_y(math.degrees(pygame.time.get_ticks() % 0.005))
 
     # Activate the control of the camera
     render.camera.control()
