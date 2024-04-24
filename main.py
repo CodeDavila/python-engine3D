@@ -59,6 +59,8 @@ def readOBJ(file):
 
 # Duck model from file 
 duck_vertexes, duck_faces = readOBJ('duck.obj')
+# Plane mpdel from file 
+plane_vertexes, plane_faces = readOBJ('plane_japan_wwII.obj')
 
 # Matrix operation Functions
 
@@ -494,11 +496,18 @@ render = Render(camera_position=[0.5, 1.2, -6])
 # axes.translate([0.7, 0.9, 0.7])
 
 # Create a 3D object (a duck)
-duck = render.create_object(duck_vertexes, duck_faces, draw_vertexes=False)
-duck.scale([0.04, 0.04, 0.04])
-duck.rotate_x(-90)
-duck.rotate_y(-150)
-duck.translate([1, 0.0001, 1])
+# duck = render.create_object(duck_vertexes, duck_faces, draw_vertexes=False)
+# duck.scale([0.04, 0.04, 0.04])
+# duck.rotate_x(-90)
+# duck.rotate_y(-150)
+# duck.translate([1, 0.0001, 1])
+
+# Create a 3D object (a plane)
+plane = render.create_object(plane_vertexes, plane_faces, draw_vertexes=False)
+plane.scale([2.5, 2.5, 2.5])
+plane.rotate_x(-90)
+plane.rotate_y(150)
+plane.translate([1, 1, 1])
 # Create world axes
 world_axes = render.create_axes()
 world_axes.scale([2.5, 2.5, 2.5])
@@ -531,9 +540,14 @@ while True:
     # axes.rotate_y(math.degrees(pygame.time.get_ticks() % 0.005))
 
     # Draw the duck
-    duck.draw(window=window)
+    # duck.draw(window=window)
     # Move the duck
-    duck.rotate_y(math.degrees(pygame.time.get_ticks() % 0.005))
+    # duck.rotate_y(math.degrees(pygame.time.get_ticks() % 0.005))
+
+    # Draw the plane
+    plane.draw(window=window)
+    # Move the plane
+    plane.rotate_y(math.degrees(pygame.time.get_ticks() % 0.005))
 
     # Activate the control of the camera
     render.camera.control()
