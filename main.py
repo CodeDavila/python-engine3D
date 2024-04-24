@@ -1,7 +1,15 @@
 import pygame
 import math
 import numpy as np
+from numba import njit
+
+
 pygame.init()
+
+# Numba wraper 
+@njit(fastmath = True)
+def any_func(arr, a, b):
+    return np.any((arr == a) | (arr == b))
 
 # Constants for window resolution and colors
 RESOLUTION = WIDTH, HEIGHT = 1200, 700
@@ -186,7 +194,7 @@ class Object3D:
         for index, color_face in enumerate(self.color_faces):
             color, face = color_face
             polygon = vertexes[face]
-            if not np.any((polygon == HALF_WIDTH) | (polygon == HALF_HEIGHT)):
+            if not any_func(polygon, HALF_WIDTH, HALF_HEIGHT):
                 pygame.draw.polygon(window, color, polygon, 1)
                 if self.label:
                     text = self.font.render(self.label[index], True, pygame.Color(FONT_COLOR))
@@ -194,7 +202,7 @@ class Object3D:
 
         if self.draw_vertexes:
             for vertex in vertexes:
-                if not np.any((vertex == HALF_WIDTH) | (vertex == HALF_HEIGHT)):
+                if not any_func(vertex, HALF_WIDTH, HALF_HEIGHT):
                     pygame.draw.circle(window, pygame.Color(VERTEX_COLOR), vertex, 2)
 
     def _screen_projection(self):
